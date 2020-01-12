@@ -1,0 +1,1 @@
+C:\Programs\Arduino\hardware\tools\avr\bin\avrdude.exe -C C:\Programs\Arduino\hardware\tools\avr\etc\avrdude.conf -c arduino -p atmega328p -P Com4 -b 115200 -U C:\Users\OBIR\AppData\Local\Temp\arduino_build_211407\MINI_PRO.ino.hex
