@@ -463,7 +463,7 @@ void loop() {
         boolean flag=false;
         while(true)
         {
-        int x=millis();
+        unsigned long x=millis();
         Serial.println(F("Transmision to client"));
         Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
         packetBuffer[0] = 64 + (char)TKL;
@@ -488,17 +488,18 @@ void loop() {
           Udp.write(packetBuffer, 3);
           sprintf(packetBuffer, "{value: %d}", payload.value);
         }
-        Udp.write(packetBuffer, sizeof(packetBuffer));
+        //Udp.write(packetBuffer, sizeof(packetBuffer));
+        Udp.write(packetBuffer, strlen(packetBuffer));
         Udp.endPacket(); // odsyłamy odczytaną wartość do klienta który żądał
         if(flagForDebug)
         { 
           Serial.println(F("Pokazujemy retransmisje"));
-          while(millis()-x<=5000)
+          while((millis()-x)<=5000)
           {
           }
           flagForDebug=false;
         }
-        while(millis()-x<=3000)
+        while((millis()-x)<=3000)
         {
           
           Serial.println(F("millis"));
