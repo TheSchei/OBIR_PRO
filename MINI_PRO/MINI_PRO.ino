@@ -16,6 +16,7 @@ int value = 0;
 int frequency = 11;
 struct payload_t payload;
 RF24NetworkHeader headerRec(0), headerSend(0);
+int counterForStats=0;
 
 void setup() {
  pinMode(10, OUTPUT);
@@ -61,6 +62,7 @@ void loop() {
           Timer1.start();//ciekawe, czy jest na tyle mądre, że się nie wywala jeśli wystartujemy wystartowany
           Serial.print(frequency);
           Serial.println(F(" is a new frequency."));
+          ++counterForStats;
         }
         else
         {
@@ -74,6 +76,7 @@ void loop() {
       payload.value = frequency;
       network.write(headerSend, &payload, sizeof(payload));
       Serial.println(F("Frequency sent to gateway."));
+      ++counterForStats;
       break;
     case 3: //GET potencjometr
       value = 0;
@@ -86,6 +89,13 @@ void loop() {
       network.write(headerSend, &payload, sizeof(payload));
       Serial.print(value);
       Serial.println(F(" value sent to gateway.."));
+      ++counterForStats;
+      break;
+    case 4: // get stats
+      ++counterForStats;
+      payload.type=4;
+      payload.value=counterForStats;
+      network.write(headerSend,&payload,sizeof(payload));
       break;
     default:
       Serial.println(F("Unknown type of message"));
