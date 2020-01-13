@@ -4,14 +4,8 @@
 #include <Ethernet.h>
 #include <EthernetUdp.h>
 
-<<<<<<< HEAD
 //well-known/core string
-#define CORE "</test>;rt=\"test\";ct=0,</frequency>;rt=\"frequency\";ct=0,</potencjometr>;rt=\"potencjometr\";ct=0,</udprecs>;rt=\"udprecs\";ct=0,</errors>;rt=\"errors\";ct=0"
-=======
 #define CORE "</test>;rt=\"test\";ct=0,</frequency>;rt=\"frequency\";ct=0,</potencjometr>;rt=\"potencjometr\";ct=0,</udprecs>;rt=\"udprecs\";ct=0,</errors>;rt=\"errors\";ct=0,</ministats>;rt=\"ministats\";ct=0,</debug>;rt=\"debug\";ct=0"
-
-
->>>>>>> 49ac6fdc02818f784442b02410da4c8375c4a775
 
 byte mac[]={0x00, 0xaa, 0xbb, 0xcc, 0xde, 0xf6};
 EthernetUDP Udp;
