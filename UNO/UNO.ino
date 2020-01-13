@@ -49,7 +49,7 @@ byte errorFlag = 0;
 
 //zmienne pomocnicze
 boolean flag;
-boolean flagForDebug;
+boolean flagForDebug=false;
 byte option;
 byte option_delta;
 byte option_length;
@@ -88,7 +88,7 @@ void loop() {
         packetBuffer[2] = 0b11111111;
         Udp.write(packetBuffer, 3);
         strcpy(packetBuffer, "Bad Request");
-        Udp.Write(packetBuffer, sizeof(packetBuffer));
+        Udp.write(packetBuffer, sizeof(packetBuffer));
         Udp.endPacket();
         break;
 
@@ -99,12 +99,13 @@ void loop() {
         packetBuffer[3] = mid.x[0];
         Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
         Udp.write(packetBuffer, 4);
+        Udp.write(Token, TKL);
         packetBuffer[0] = 0b11000001;
         packetBuffer[1] = 0;
         packetBuffer[2] = 0b11111111;
         Udp.write(packetBuffer, 3);
         strcpy(packetBuffer, "Bad Request");
-        Udp.Write(packetBuffer, sizeof(packetBuffer));
+        Udp.write(packetBuffer, sizeof(packetBuffer));
         Udp.endPacket();
         break;
 
@@ -115,12 +116,13 @@ void loop() {
         packetBuffer[3] = mid.x[0];
         Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
         Udp.write(packetBuffer, 4);
+        Udp.write(Token, TKL);
         packetBuffer[0] = 0b11000001;
         packetBuffer[1] = 0;
         packetBuffer[2] = 0b11111111;
         Udp.write(packetBuffer, 3);
         strcpy(packetBuffer, "Not Found");
-        Udp.Write(packetBuffer, sizeof(packetBuffer));
+        Udp.write(packetBuffer, sizeof(packetBuffer));
         Udp.endPacket();
         break;
 
@@ -131,12 +133,13 @@ void loop() {
         packetBuffer[3] = mid.x[0];
         Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
         Udp.write(packetBuffer, 4);
+        Udp.write(Token, TKL);
         packetBuffer[0] = 0b11000001;
         packetBuffer[1] = 0;
         packetBuffer[2] = 0b11111111;
         Udp.write(packetBuffer, 3);
         strcpy(packetBuffer, "Unsupported Content-Format");
-        Udp.Write(packetBuffer, sizeof(packetBuffer));
+        Udp.write(packetBuffer, sizeof(packetBuffer));
         Udp.endPacket();
         break;
 
@@ -147,12 +150,13 @@ void loop() {
         packetBuffer[3] = mid.x[0];
         Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
         Udp.write(packetBuffer, 4);
+        Udp.write(Token, TKL);
         packetBuffer[0] = 0b11000001;
         packetBuffer[1] = 0;
         packetBuffer[2] = 0b11111111;
         Udp.write(packetBuffer, 3);
         strcpy(packetBuffer, "Not Acceptable");
-        Udp.Write(packetBuffer, sizeof(packetBuffer));
+        Udp.write(packetBuffer, sizeof(packetBuffer));
         Udp.endPacket();
         break;
 
@@ -163,12 +167,13 @@ void loop() {
         packetBuffer[3] = mid.x[0];
         Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
         Udp.write(packetBuffer, 4);
+        Udp.write(Token, TKL);
         packetBuffer[0] = 0b11000001;
         packetBuffer[1] = 0;
         packetBuffer[2] = 0b11111111;
         Udp.write(packetBuffer, 3);
         strcpy(packetBuffer, "Bad Option");
-        Udp.Write(packetBuffer, sizeof(packetBuffer));
+        Udp.write(packetBuffer, sizeof(packetBuffer));
         Udp.endPacket();
         break;
 
@@ -179,12 +184,13 @@ void loop() {
         packetBuffer[3] = mid.x[0];
         Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
         Udp.write(packetBuffer, 4);
+        Udp.write(Token, TKL);
         packetBuffer[0] = 0b11000001;
         packetBuffer[1] = 0;
         packetBuffer[2] = 0b11111111;
         Udp.write(packetBuffer, 3);
         strcpy(packetBuffer, "Internal Server Error");
-        Udp.Write(packetBuffer, sizeof(packetBuffer));
+        Udp.write(packetBuffer, sizeof(packetBuffer));
         Udp.endPacket();
         break;
     }
@@ -460,7 +466,7 @@ void loop() {
         int x=millis();
         Serial.println(F("Transmision to client"));
         Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-         packetBuffer[0] = 64 + (char)TKL;
+        packetBuffer[0] = 64 + (char)TKL;
         packetBuffer[1] = 0b01000101; //2.05
         packetBuffer[2] = mid.x[1]+1; packetBuffer[3] = mid.x[0];//different message id 
         Udp.write(packetBuffer, 4);
