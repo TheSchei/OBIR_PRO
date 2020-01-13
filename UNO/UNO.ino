@@ -4,6 +4,7 @@
 #include <Ethernet.h>
 #include <EthernetUdp.h>
 
+//well-known/core string
 #define CORE "</test>;rt=\"test\";ct=0,</frequency>;rt=\"frequency\";ct=0,</potencjometr>;rt=\"potencjometr\";ct=0,</udprecs>;rt=\"udprecs\";ct=0,</errors>;rt=\"errors\";ct=0"
 
 byte mac[]={0x00, 0xaa, 0xbb, 0xcc, 0xde, 0xf6};
@@ -14,16 +15,18 @@ boolean ifCON=true; // checks if it is a CON/NON message
 RF24 radio(7, 8);
 RF24Network network(radio);
 
+//struct for communication with MiniPro
 struct payload_t  
 {
   char type = 0;
   int value;
 };
 
+//CoAP Message ID
 union MID
 {
   char x[2];
-  unsigned int MID;
+  unsigned int MID; //chyba niepotrzebne pole
 };
 
 struct payload_t payload;
@@ -36,9 +39,9 @@ unsigned long temp;//TEMP
 
 //Zmienne główne
 MID mid; // message id
-unsigned char TKL; // długosc tokena
-char Token[15];
-byte UriPath;
+unsigned char TKL; // token length
+char Token[15]; //CoAP token
+byte UriPath; //UriPath encoded on one byte
 unsigned int option_accept;
 unsigned int option_content;
 char code;
@@ -63,9 +66,128 @@ void setup() {
 
 void loop() {
   network.update();
-  if (errorFlag)
+  if (errorFlag) //Error occured in previous iteration
   {
+    if(ifCON)
+      packetBuffer[0] = 96; // v1 ACK
+    else
+      packetBuffer[0] = 80; // v1 NON
     //CODE
+    switch(errorFlag)
+    {
+      case 255: //UNKNOWN PROTOCOL
+        packetBuffer[0] = 96; //v1 ACK TKL = 0
+        packetBuffer[1] = 0b10000000; //CODE 4.00 BAD REQUEST
+        packetBuffer[2] = mid.x[1];
+        packetBuffer[3] = mid.x[0]; //Randomowy syf bedzie?
+        Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
+        Udp.write(packetBuffer, 4);
+        packetBuffer[0] = 0b11000001;
+        packetBuffer[1] = 0;
+        packetBuffer[2] = 0b11111111;
+        Udp.write(packetBuffer, 3);
+        strcpy(packetBuffer, "Bad Request");
+        Udp.Write(packetBuffer, sizeof(packetBuffer));
+        Udp.endPacket();
+        break;
+
+      case 1: //UNKNOWN TYPE FIELD
+        packetBuffer[0] += TKL;
+        packetBuffer[1] = 0b10000000; //CODE 4.00 BAD REQUEST
+        packetBuffer[2] = mid.x[1];
+        packetBuffer[3] = mid.x[0];
+        Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
+        Udp.write(packetBuffer, 4);
+        packetBuffer[0] = 0b11000001;
+        packetBuffer[1] = 0;
+        packetBuffer[2] = 0b11111111;
+        Udp.write(packetBuffer, 3);
+        strcpy(packetBuffer, "Bad Request");
+        Udp.Write(packetBuffer, sizeof(packetBuffer));
+        Udp.endPacket();
+        break;
+
+      case 128: //UNKNOWN URI PATH
+        packetBuffer[0] += TKL;
+        packetBuffer[1] = 0b10000100; //CODE 4.04 NOT FOUND
+        packetBuffer[2] = mid.x[1];
+        packetBuffer[3] = mid.x[0];
+        Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
+        Udp.write(packetBuffer, 4);
+        packetBuffer[0] = 0b11000001;
+        packetBuffer[1] = 0;
+        packetBuffer[2] = 0b11111111;
+        Udp.write(packetBuffer, 3);
+        strcpy(packetBuffer, "Not Found");
+        Udp.Write(packetBuffer, sizeof(packetBuffer));
+        Udp.endPacket();
+        break;
+
+      case 129: //UNKNOWN CONTENT-FORMAT
+        packetBuffer[0] += TKL;
+        packetBuffer[1] = 0b10001111; //CODE 4.15 UNSUPPORTED CONTENT-FORMAT
+        packetBuffer[2] = mid.x[1];
+        packetBuffer[3] = mid.x[0];
+        Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
+        Udp.write(packetBuffer, 4);
+        packetBuffer[0] = 0b11000001;
+        packetBuffer[1] = 0;
+        packetBuffer[2] = 0b11111111;
+        Udp.write(packetBuffer, 3);
+        strcpy(packetBuffer, "Unsupported Content-Format");
+        Udp.Write(packetBuffer, sizeof(packetBuffer));
+        Udp.endPacket();
+        break;
+
+      case 130: //UNKNOWN ACCEPT FORMAT
+        packetBuffer[0] += TKL;
+        packetBuffer[1] = 0b10001111; //CODE 4.06 NOT ACCEPTABLE
+        packetBuffer[2] = mid.x[1];
+        packetBuffer[3] = mid.x[0];
+        Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
+        Udp.write(packetBuffer, 4);
+        packetBuffer[0] = 0b11000001;
+        packetBuffer[1] = 0;
+        packetBuffer[2] = 0b11111111;
+        Udp.write(packetBuffer, 3);
+        strcpy(packetBuffer, "Not Acceptable");
+        Udp.Write(packetBuffer, sizeof(packetBuffer));
+        Udp.endPacket();
+        break;
+
+      case 131: //UNKNOWN OPTION
+        packetBuffer[0] += TKL;
+        packetBuffer[1] = 0b10001111; //CODE 4.02 BAD OPTION
+        packetBuffer[2] = mid.x[1];
+        packetBuffer[3] = mid.x[0];
+        Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
+        Udp.write(packetBuffer, 4);
+        packetBuffer[0] = 0b11000001;
+        packetBuffer[1] = 0;
+        packetBuffer[2] = 0b11111111;
+        Udp.write(packetBuffer, 3);
+        strcpy(packetBuffer, "Bad Option");
+        Udp.Write(packetBuffer, sizeof(packetBuffer));
+        Udp.endPacket();
+        break;
+
+      default:
+        packetBuffer[0] += TKL;
+        packetBuffer[1] = 0b10100000; //CODE 5.00 INTERNAL SERVER ERROR
+        packetBuffer[2] = mid.x[1];
+        packetBuffer[3] = mid.x[0];
+        Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
+        Udp.write(packetBuffer, 4);
+        packetBuffer[0] = 0b11000001;
+        packetBuffer[1] = 0;
+        packetBuffer[2] = 0b11111111;
+        Udp.write(packetBuffer, 3);
+        strcpy(packetBuffer, "Internal Server Error");
+        Udp.Write(packetBuffer, sizeof(packetBuffer));
+        Udp.endPacket();
+        break;
+    }
+
     ErrorCounter++;
     errorFlag = 0;
     return;
@@ -92,27 +214,27 @@ void loop() {
 //        Serial.print(packetBuffer[i]);
 //      }
 //      Serial.println();
-      Udp.read(packetBuffer, 4);
-      if((packetBuffer[0] & 0b11110000) == 64)//CON message
+      Udp.read(packetBuffer, 4); //Read first 4 bytes of message
+      if((packetBuffer[0] & 0b11110000) == 64)//v1 CON message
       {
-        TKL = (unsigned char)(packetBuffer[0] & 0b00001111);
-        mid.x[1] = packetBuffer[2]; mid.x[0] = packetBuffer[3];
+        TKL = (unsigned char)(packetBuffer[0] & 0b00001111); //Read Token length (second 4 bits of first byte)
+        mid.x[1] = packetBuffer[2]; mid.x[0] = packetBuffer[3]; //Read MessageID (third and fourth byte)
         ifCON=true;
-        if((code=packetBuffer[1]) == 0)//PING
+        if((code=packetBuffer[1]) == 0)//PING empty message
         {
           packetBuffer[0] = 96;//ACK, v1, TKL == 0
           Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-          Udp.write(packetBuffer, 4);
+          Udp.write(packetBuffer, 4); //Send response (the same code and message id)
           Udp.endPacket();
           return;
         }
       }
-      else if(packetBuffer[0] & 0b11110000 == 80)
+      else if(packetBuffer[0] & 0b11110000 == 80) // NON message
       {
           ifCON=false;//NON
       }
-      else if(packetBuffer[0] & 0b11110000 == 96) return;//ACK
-      else//ERROR
+      else if(packetBuffer[0] & 0b11110000 == 96) return; //ACK message
+      else // ERROR unknown type
       {
         errorFlag = 1;
         return;
@@ -121,9 +243,9 @@ void loop() {
       
       Serial.println(F("Reading Token"));
       
-      Udp.read(packetBuffer, TKL);//sprawdzić, czy działą poprawnie przy TKL==0
+      Udp.read(packetBuffer, TKL); //Read TKL bytes of message  //sprawdzić, czy działą poprawnie przy TKL==0
       for (int i=0; i<TKL; i++)
-        Token[i] = packetBuffer[i];
+        Token[i] = packetBuffer[i]; // Save Token in Token variable
 
       Serial.println(F("Reading options"));
       
@@ -212,7 +334,7 @@ void loop() {
       //brutalna optymalizacja
       Udp.read(packetBuffer, sizeof(packetBuffer));//zakładamy, że payload nie może przekraczać wielkości bufora
       
-      if(UriPath == 192)// /.well-known/core // jeszcze powinien być warunek code == 1, czyli GET
+      if(UriPath == 192 && code == 1)// /.well-known/core // jeszcze powinien być warunek code == 1, czyli GET
       {
         Serial.println(F("Send response"));
         Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
@@ -229,7 +351,7 @@ void loop() {
         Udp.write(CORE, sizeof(CORE));
         Udp.endPacket();
       }
-      else if(UriPath == 32)// /test // jeszcze powinien być warunek code == 1, czyli GET
+      else if(UriPath == 32 && code == 1)// /test // jeszcze powinien być warunek code == 1, czyli GET
       {
         Serial.println(F("Send response test"));
         Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
