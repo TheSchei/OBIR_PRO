@@ -13,7 +13,7 @@ struct payload_t
 };
 
 int value = 0;
-int frequency = 11;
+int frequency = 0;
 struct payload_t payload;
 RF24NetworkHeader headerRec(0), headerSend(0);
 int counterForStats=0;
@@ -31,33 +31,28 @@ void setup() {
 }
 
 void myisr(){
-  //digitalWrite(9,digitalRead(9)^1); // actual tone generation//niech mi nie halasuje :p
+  //digitalWrite(10,digitalRead(10)^1); // actual tone generation//niech mi nie halasuje :p
 }
 
 void loop() {
- //digitalWrite(10, digitalRead(10) ^ 1); // zmiana stanu membrany
- //i++;
- //delay(1);
- //if (i==1000)
- //{
- // i = 0;
- // Serial.println(F("freez"));
- // delay(2000);
- // }
   network.update();
   while(network.available())
-  //if(network.available())
   {
     network.read(headerRec, &payload, sizeof(payload));
     switch(payload.type)
     {
-    case 1:
-        //set frequency
-        if (payload.value <= 0) Timer1.stop();
-        else if (payload.value < 1024)
+    case 1://set frequency
+        if (payload.value <= 0) 
+        {
+          frequency = 0;
+          Serial.println(F("Speaker stopped."));
+          Timer1.stop();
+        }
+        else if (payload.value < 20000)
         { 
           frequency = payload.value;
-          Timer1.setPeriod(frequency<<9);//frequency*500//optymalizacja:p frequency<<9
+          //Timer1.setPeriod(frequency<<9);//frequency*500//optymalizacja:p frequency<<9
+          Timer1.setPeriod(500000/frequency);//frequency*500//optymalizacja:p frequency<<9
           //Timer1.reset();
           Timer1.start();//ciekawe, czy jest na tyle mądre, że się nie wywala jeśli wystartujemy wystartowany
           Serial.print(frequency);
