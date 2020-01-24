@@ -344,7 +344,7 @@ void loop() {
         packetBuffer[1] = 40;//application/link format
         packetBuffer[2] = 0b11111111;//payload marker
         Udp.write(packetBuffer, 3);
-        Udp.write(CORE, sizeof(CORE));
+        Udp.write(CORE, strlen(CORE));
         Udp.endPacket();
       }
       else if(((UriPath == 16) || (UriPath == 1)) && (code == 1))// GET /frequency or GET/miniStats
