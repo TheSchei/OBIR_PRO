@@ -231,7 +231,9 @@ void loop() {
       }
       else if(packetBuffer[0] & 0b11110000 == 80) // NON message
       {
-          ifCON=false;//NON
+        TKL = (unsigned char)(packetBuffer[0] & 0b00001111); //Read Token length (second 4 bits of first byte)
+        mid.x[1] = packetBuffer[2]; mid.x[0] = packetBuffer[3]; //Read MessageID (third and fourth byte)
+        ifCON=false;
       }
       else if(packetBuffer[0] & 0b11110000 == 96) return; //ACK message
       else // ERROR unknown type
