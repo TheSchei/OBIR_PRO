@@ -87,8 +87,7 @@ void loop() {
         packetBuffer[1] = 0;
         packetBuffer[2] = 0b11111111;
         Udp.write(packetBuffer, 3);
-        strcpy(packetBuffer, "Bad Request");
-        Udp.write(packetBuffer, sizeof(packetBuffer));
+        Udp.write("Bad Request", sizeof("Bad Request"));
         Udp.endPacket();
         break;
 
@@ -104,8 +103,7 @@ void loop() {
         packetBuffer[1] = 0;
         packetBuffer[2] = 0b11111111;
         Udp.write(packetBuffer, 3);
-        strcpy(packetBuffer, "Bad Request");
-        Udp.write(packetBuffer, sizeof(packetBuffer));
+        Udp.write("Bad Request", sizeof("Bad Request"));
         Udp.endPacket();
         break;
 
@@ -121,8 +119,7 @@ void loop() {
         packetBuffer[1] = 0;
         packetBuffer[2] = 0b11111111;
         Udp.write(packetBuffer, 3);
-        strcpy(packetBuffer, "Not Found");
-        Udp.write(packetBuffer, sizeof(packetBuffer));
+        Udp.write("Not Found", sizeof("Not Found"));
         Udp.endPacket();
         break;
 
@@ -138,8 +135,7 @@ void loop() {
         packetBuffer[1] = 0;
         packetBuffer[2] = 0b11111111;
         Udp.write(packetBuffer, 3);
-        strcpy(packetBuffer, "Unsupported Content-Format");
-        Udp.write(packetBuffer, sizeof(packetBuffer));
+        Udp.write("Unsupported Content-Format", sizeof("Unsupported Content-Format"));
         Udp.endPacket();
         break;
 
@@ -155,8 +151,7 @@ void loop() {
         packetBuffer[1] = 0;
         packetBuffer[2] = 0b11111111;
         Udp.write(packetBuffer, 3);
-        strcpy(packetBuffer, "Not Acceptable");
-        Udp.write(packetBuffer, sizeof(packetBuffer));
+        Udp.write("Not Acceptable", sizeof("Not Acceptable"));
         Udp.endPacket();
         break;
 
@@ -172,8 +167,7 @@ void loop() {
         packetBuffer[1] = 0;
         packetBuffer[2] = 0b11111111;
         Udp.write(packetBuffer, 3);
-        strcpy(packetBuffer, "Bad Option");
-        Udp.write(packetBuffer, sizeof(packetBuffer));
+        Udp.write("Bad Option", sizeof("Bad Option"));
         Udp.endPacket();
         break;
 
@@ -189,8 +183,7 @@ void loop() {
         packetBuffer[1] = 0;
         packetBuffer[2] = 0b11111111;
         Udp.write(packetBuffer, 3);
-        strcpy(packetBuffer, "Internal Server Error");
-        Udp.write(packetBuffer, sizeof(packetBuffer));
+        Udp.write("Internal Server Error", sizeof("Internal Server Error"));
         Udp.endPacket();
         break;
     }
