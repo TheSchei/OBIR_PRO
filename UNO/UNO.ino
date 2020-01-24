@@ -5,7 +5,7 @@
 #include <EthernetUdp.h>
 
 //well-known/core string
-#define CORE "</test>;rt=\"test\";ct=0,</frequency>;rt=\"frequency\";ct=0,</potencjometr>;rt=\"potencjometr\";ct=0,</udprecs>;rt=\"udprecs\";ct=0,</errors>;rt=\"errors\";ct=0,</ministats>;rt=\"ministats\";ct=0,</debug>;rt=\"debug\";ct=0"
+#define CORE "</frequency>;rt=\"frequency\";ct=0,</potencjometr>;rt=\"potencjometr\";ct=0,</udprecs>;rt=\"udprecs\";ct=0,</errors>;rt=\"errors\";ct=0,</ministats>;rt=\"ministats\";ct=0,</debug>;rt=\"debug\";ct=0"
 
 byte mac[]={0x00, 0xaa, 0xbb, 0xcc, 0xde, 0xf6};
 EthernetUDP Udp;
@@ -18,15 +18,15 @@ RF24Network network(radio);
 //struct for communication with MiniPro
 struct payload_t  
 {
-  char type = 0;
-  int value;
+  char type = 0;//type od message
+  int value;//value
 };
 
 //CoAP Message ID
 union MID
 {
   char x[2];
-  unsigned int MID; //chyba niepotrzebne pole
+  unsigned int MID;
 };
 
 struct payload_t payload;
@@ -42,10 +42,10 @@ MID mid; // message id
 unsigned char TKL; // token length
 char Token[15]; //CoAP token
 byte UriPath; //UriPath encoded on one byte
-unsigned int option_accept;
-unsigned int option_content;
-char code;
-byte errorFlag = 0;
+unsigned int option_accept; //number of option Accept
+unsigned int option_content;//number of option content format
+char code; // type of message (GET, PUT, etc)
+byte errorFlag = 0;//flag of error
 
 //zmienne pomocnicze
 boolean flag;
@@ -203,12 +203,10 @@ void loop() {
   if(packetSize)
   {
     ReceivedUDPMessages++;
-    Serial.println(F("Mamy pakiet"));
+    Serial.println(F("Processing package"));
     Serial.println(packetSize);
     memset(packetBuffer, 0 ,sizeof(packetBuffer));
     int r = 0;
-//    Udp.read(packetBuffer, sizeof(packetBuffer));
-    
     if (packetSize < 4) //ERROR (unknown protocol)
     {
       errorFlag = 255;
@@ -216,11 +214,6 @@ void loop() {
     }
     else
     {
-//      for(int i=0;i<packetSize;i++)
-//      {
-//        Serial.print(packetBuffer[i]);
-//      }
-//      Serial.println();
       Udp.read(packetBuffer, 4); //Read first 4 bytes of message
       if((packetBuffer[0] & 0b11110000) == 64)//v1 CON message
       {
@@ -295,7 +288,6 @@ void loop() {
             Serial.println(packetBuffer);
             if (!strcmp(packetBuffer, ".well-known") && UriPath == 0) UriPath = 128;
             else if (!strcmp(packetBuffer, "core") && UriPath == 128) UriPath = 192;
-            else if (!strcmp(packetBuffer, "test") && UriPath == 0) UriPath = 32;
             else if (!strcmp(packetBuffer, "frequency") && UriPath == 0) UriPath = 16;
             else if(!strcmp(packetBuffer, "potencjometr") && UriPath==0) UriPath=8;
             else if(!strcmp(packetBuffer, "udprecs") && UriPath==0) UriPath=4;
@@ -363,35 +355,6 @@ void loop() {
         packetBuffer[2] = 0b11111111;
         Udp.write(packetBuffer, 3);
         Udp.write(CORE, sizeof(CORE));
-        Udp.endPacket();
-      }
-      else if(UriPath == 32 && code == 1)// /test // jeszcze powinien być warunek code == 1, czyli GET
-      {
-        Serial.println(F("Send response test"));
-        Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-        packetBuffer[0] = 96 + (char)TKL;
-        packetBuffer[1] = 0b01000101;
-        packetBuffer[2] = mid.x[1]; packetBuffer[3] = mid.x[0];
-        Udp.write(packetBuffer, 4);
-        Udp.write(Token, (int)TKL);
-        packetBuffer[0] = 0b11000001;
-        //packetBuffer[1] = 0; //packetBuffer[1] = option_accept możnaby tak zrobić
-        //DODALEM SPRAWDZANIE OPCJI, RACZEJ MOZNA ODKOMENTOWAC
-        packetBuffer[2] = 0b11111111;
-        //Udp.write(packetBuffer, 3);
-        if (option_accept == 0) 
-        {
-          packetBuffer[1] = 0;
-          Udp.write(packetBuffer, 3);
-          strcpy(packetBuffer, "plaintext, or anything");
-        }
-        else if (option_accept == 50)
-        {
-          packetBuffer[1] = 50;
-          Udp.write(packetBuffer, 3);
-          strcpy(packetBuffer, "{text: \"plaintext, or anything\"}");
-        }
-        Udp.write(packetBuffer, sizeof(packetBuffer));
         Udp.endPacket();
       }
       else if((UriPath == 16) && (code == 1))// GET /frequency
