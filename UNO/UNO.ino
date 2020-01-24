@@ -87,7 +87,7 @@ void loop() {
         packetBuffer[1] = 0;
         packetBuffer[2] = 0b11111111;
         Udp.write(packetBuffer, 3);
-        Udp.write("Bad Request", sizeof("Bad Request"));
+        Udp.write("Bad Request", strlen("Bad Request"));
         Udp.endPacket();
         break;
 
@@ -103,7 +103,7 @@ void loop() {
         packetBuffer[1] = 0;
         packetBuffer[2] = 0b11111111;
         Udp.write(packetBuffer, 3);
-        Udp.write("Bad Request", sizeof("Bad Request"));
+        Udp.write("Bad Request", strlen("Bad Request"));
         Udp.endPacket();
         break;
 
@@ -119,7 +119,7 @@ void loop() {
         packetBuffer[1] = 0;
         packetBuffer[2] = 0b11111111;
         Udp.write(packetBuffer, 3);
-        Udp.write("Not Found", sizeof("Not Found"));
+        Udp.write("Not Found", strlen("Not Found"));
         Udp.endPacket();
         break;
 
@@ -135,13 +135,13 @@ void loop() {
         packetBuffer[1] = 0;
         packetBuffer[2] = 0b11111111;
         Udp.write(packetBuffer, 3);
-        Udp.write("Unsupported Content-Format", sizeof("Unsupported Content-Format"));
+        Udp.write("Unsupported Content-Format", strlen("Unsupported Content-Format"));
         Udp.endPacket();
         break;
 
       case 130: //UNKNOWN ACCEPT FORMAT
         packetBuffer[0] += TKL;
-        packetBuffer[1] = 0b10001111; //CODE 4.06 NOT ACCEPTABLE
+        packetBuffer[1] = 0b10000110; //CODE 4.06 NOT ACCEPTABLE
         packetBuffer[2] = mid.x[1];
         packetBuffer[3] = mid.x[0];
         Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
@@ -151,13 +151,13 @@ void loop() {
         packetBuffer[1] = 0;
         packetBuffer[2] = 0b11111111;
         Udp.write(packetBuffer, 3);
-        Udp.write("Not Acceptable", sizeof("Not Acceptable"));
+        Udp.write("Not Acceptable", strlen("Not Acceptable"));
         Udp.endPacket();
         break;
 
       case 131: //UNKNOWN OPTION
         packetBuffer[0] += TKL;
-        packetBuffer[1] = 0b10001111; //CODE 4.02 BAD OPTION
+        packetBuffer[1] = 0b10000010; //CODE 4.02 BAD OPTION
         packetBuffer[2] = mid.x[1];
         packetBuffer[3] = mid.x[0];
         Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
@@ -167,7 +167,7 @@ void loop() {
         packetBuffer[1] = 0;
         packetBuffer[2] = 0b11111111;
         Udp.write(packetBuffer, 3);
-        Udp.write("Bad Option", sizeof("Bad Option"));
+        Udp.write("Bad Option", strlen("Bad Option"));
         Udp.endPacket();
         break;
 
@@ -183,7 +183,7 @@ void loop() {
         packetBuffer[1] = 0;
         packetBuffer[2] = 0b11111111;
         Udp.write(packetBuffer, 3);
-        Udp.write("Internal Server Error", sizeof("Internal Server Error"));
+        Udp.write("Internal Server Error", strlen("Internal Server Error"));
         Udp.endPacket();
         break;
     }
@@ -222,13 +222,14 @@ void loop() {
           return;
         }
       }
-      else if(packetBuffer[0] & 0b11110000 == 80) // NON message
+      else if((packetBuffer[0] & 0b11110000) == 80) // NON message
       {
         TKL = (unsigned char)(packetBuffer[0] & 0b00001111); //Read Token length (second 4 bits of first byte)
+        code=packetBuffer[1];
         mid.x[1] = packetBuffer[2]; mid.x[0] = packetBuffer[3]; //Read MessageID (third and fourth byte)
         ifCON=false;
       }
-      else if(packetBuffer[0] & 0b11110000 == 96) return; //ACK message
+      else if((packetBuffer[0] & 0b11110000) == 96) return; //ACK message
       else // ERROR, unknown type
       {
         errorFlag = 1;
@@ -373,7 +374,7 @@ void loop() {
         {
           packetBuffer[1] = 50;
           Udp.write(packetBuffer, 3);
-          sprintf(packetBuffer, "{value: %d}", payload.value);
+          sprintf(packetBuffer, "{\"value\": %d}", payload.value);
         }
         Udp.write(packetBuffer, strlen(packetBuffer));
         Udp.endPacket();
@@ -438,7 +439,7 @@ void loop() {
         {
           packetBuffer[1] = 50;
           Udp.write(packetBuffer, 3);
-          sprintf(packetBuffer, "{value: %d}", payload.value);
+          sprintf(packetBuffer, "{\"value\": %d}", payload.value);
         }
         Udp.write(packetBuffer, strlen(packetBuffer));
         Udp.endPacket(); // odsyłamy odczytaną wartość do klienta który żądał
@@ -453,7 +454,7 @@ void loop() {
         while((millis()-temp)<=3000)
         {
           
-          Serial.println(F("millis"));
+          //Serial.println(F("millis"));
           packetSize=Udp.parsePacket();
           if (packetSize)
           {
@@ -494,7 +495,7 @@ void loop() {
         {
           packetBuffer[1] = 50;
           Udp.write(packetBuffer, 3);
-          sprintf(packetBuffer, "{value: %d}", temp);
+          sprintf(packetBuffer, "{\"value\": %d}", temp);
         }
         Udp.write(packetBuffer, strlen(packetBuffer));
         Udp.endPacket();
@@ -521,11 +522,12 @@ void loop() {
         {
           packetBuffer[1] = 50;
           Udp.write(packetBuffer, 3);
-          strcpy(packetBuffer, "{debug: true}");
+          strcpy(packetBuffer, "{\"debug\": true}");
         }
         Udp.write(packetBuffer, strlen(packetBuffer));
         Udp.endPacket();
       }
+      else errorFlag = 128;
      }
     }   
  }
