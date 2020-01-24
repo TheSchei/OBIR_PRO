@@ -50,9 +50,9 @@ byte errorFlag = 0;//flag of error
 //zmienne pomocnicze
 boolean flag;
 boolean flagForDebug=false;
-byte option;
-byte option_delta;
-byte option_length;
+unsigned int option;
+unsigned int option_delta;
+unsigned int option_length;
 
 void setup() {
   SPI.begin();
@@ -253,12 +253,12 @@ void loop() {
       int r=0;
       while((((r=Udp.read(packetBuffer, 1))!=-1) && (packetBuffer[0] != -1)))
       {
-        option_delta = ((byte)((packetBuffer[0] & 0b11110000) >> 4));//read option_delta
-        option_length = (byte)(packetBuffer[0] & 0b00001111);//read option length
+        option_delta = ((unsigned int)((packetBuffer[0] & 0b11110000) >> 4));//read option_delta
+        option_length = (unsigned int)(packetBuffer[0] & 0b00001111);//read option length
         if (option_delta == 13)//check if there is more bytes to read
         {
           Udp.read(packetBuffer, 1);//read rest of the option
-          option_delta += ((byte)(packetBuffer[0]));
+          option_delta += ((unsigned int)(packetBuffer[0]));
         }
         else if (option_delta > 13)
         {
@@ -268,7 +268,7 @@ void loop() {
         if (option_length == 13)//check if there is more bytes to read
         {
           Udp.read(packetBuffer, 1);
-          option_length += ((byte)(packetBuffer[0]));
+          option_length += ((unsigned int)(packetBuffer[0]));
         }
         else if (option_length > 13)
         {
