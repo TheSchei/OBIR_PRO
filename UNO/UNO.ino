@@ -260,22 +260,22 @@ void loop() {
           Udp.read(packetBuffer, 1);//read rest of the option
           option_delta += ((unsigned int)(packetBuffer[0]));
         }
-        else if (option_delta > 13)
+        else if (option_delta > 13)//error, unhandled option
         {
           errorFlag = 131;
           break;
         }
         if (option_length == 13)//check if there is more bytes to read
         {
-          Udp.read(packetBuffer, 1);
+          Udp.read(packetBuffer, 1);//read rest of the option
           option_length += ((unsigned int)(packetBuffer[0]));
         }
-        else if (option_length > 13)
+        else if (option_length > 13)//error, unhandled option
         {
           errorFlag = 131;
           break;
         }
-        option += option_delta;
+        option += option_delta;//setting option number
         Serial.print(F("Option delta: "));
         Serial.println(option_delta);
         Serial.print(F("Option length: "));
@@ -284,12 +284,12 @@ void loop() {
         Serial.println(option);
         
         if (option == 11)// URI-Path
-          if (option_length > 17) flag = false; //error
+          if (option_length > 17) errorFlag = 128; //error
           else 
           {
-            memset(packetBuffer,'\0' ,sizeof(packetBuffer));
-            Udp.read(packetBuffer, option_length);
-            if (!strcmp(packetBuffer, ".well-known") && UriPath == 0) UriPath = 128;
+            memset(packetBuffer,'\0' ,sizeof(packetBuffer));//clear buffer
+            Udp.read(packetBuffer, option_length);//read value
+            if (!strcmp(packetBuffer, ".well-known") && UriPath == 0) UriPath = 128;  //Checking URI-Path
             else if (!strcmp(packetBuffer, "core") && UriPath == 128) UriPath = 192;
             else if (!strcmp(packetBuffer, "frequency") && UriPath == 0) UriPath = 16;
             else if(!strcmp(packetBuffer, "potencjometr") && UriPath==0) UriPath=8;
@@ -303,71 +303,70 @@ void loop() {
           }
         else if (option == 12) //Content_Format
         {
-          Udp.read(packetBuffer, option_length);
-          for (int i = 0; i< option_length; i++)
+          if (option_length == 1)
           {
-            option_content <<= 8;
-            option_content += (unsigned int)packetBuffer[i];
+            Udp.read(packetBuffer, option_length);
+            option_content = (unsigned int)packetBuffer[0];
           }
-          if (option_content != 0 && option_content != 50)
+          else errorFlag = 129;//UNKNOWN FORMAT (>1 byte, so >128, we use max 50)
+          if (option_content != 0)// && option_content != 50)// we can read only plaintext(put frequency)
             errorFlag = 129;//UNKNOWN FORMAT
         }
         else if (option == 17)//Accept
         {
-          Udp.read(packetBuffer, option_length);
-          for (int i = 0; i< option_length; i++)
+          if (option_length == 1)
           {
-            option_accept <<= 8;
-            option_accept += (unsigned int)packetBuffer[i];
+            Udp.read(packetBuffer, option_length);
+            option_accept = (unsigned int)packetBuffer[0];
           }
-          if (option_accept != 0 && option_accept != 50)
+          else errorFlag = 130;//UNKNOWN ACCEPT (>1 byte, so >128, we use max 50)
+          if ((option_accept != 0 && option_accept != 50) || (UriPath == 192 && option_accept == 40))//application/linkformat case
             errorFlag = 130;//UNKNOWN ACCEPT
         }
         else errorFlag = 131;//UNKNOWN OPTION
       }
       Serial.println(F("End of while"));
       if(errorFlag) return;
-      //brutalna optymalizacja
+      
       Udp.read(packetBuffer, sizeof(packetBuffer));//zakładamy, że payload nie może przekraczać wielkości bufora
       
-      if(UriPath == 192 && code == 1)// /.well-known/core // jeszcze powinien być warunek code == 1, czyli GET
+      if(UriPath == 192 && code == 1)// /.well-known/core
       {
         Serial.println(F("Send response"));
         Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-        packetBuffer[0] = 96 + (char)TKL;
-        //packetBuffer[1] = 69;
-        packetBuffer[1] = 0b01000101;
+        packetBuffer[0] = 96 + (char)TKL;//ACK + TKL
+        packetBuffer[1] = 0b01000101;//2.05
         packetBuffer[2] = mid.x[1]; packetBuffer[3] = mid.x[0];
         Udp.write(packetBuffer, 4);
         Udp.write(Token, (int)TKL);
-        packetBuffer[0] = 0b11000001;
-        packetBuffer[1] = 40;
-        packetBuffer[2] = 0b11111111;
+        packetBuffer[0] = 0b11000001;//content format
+        packetBuffer[1] = 40;//application/link format
+        packetBuffer[2] = 0b11111111;//payload marker
         Udp.write(packetBuffer, 3);
         Udp.write(CORE, sizeof(CORE));
         Udp.endPacket();
       }
-      else if((UriPath == 16) && (code == 1))// GET /frequency
+      else if(((UriPath == 16) || (UriPath == 1)) && (code == 1))// GET /frequency or GET/miniStats
       {
-        payload.type = 2;//GET frequency 
+        if(UriPath == 16) payload.type = 2;//GET frequency
+        else payload.type = 4;//GET miniStats
         payload.value = 0;
         network.write(headerSend, &payload, sizeof(payload));
         while(!network.available()) network.update(); // communication with mini pro
         network.read(headerRec, &payload, sizeof(payload));  
-         Udp.beginPacket(Udp.remoteIP(), Udp.remotePort()); // we got frequency and we'll send it to client
+         Udp.beginPacket(Udp.remoteIP(), Udp.remotePort()); // we got value and we'll send it to client
         packetBuffer[0] = 96 + (char)TKL;
         packetBuffer[1] = 0b01000101; //2.05
         packetBuffer[2] = mid.x[1]; packetBuffer[3] = mid.x[0]; 
         Udp.write(packetBuffer, 4);
         Udp.write(Token, (int)TKL); //the same token
         packetBuffer[0] = 0b11000001;
-        //packetBuffer[1] = 0; //packetBuffer[1] = option_accept możnaby tak zrobić, ale trzeba by zostawić to gotowe na zbugowanie, albo zabezpieczyć przed content-formatem o id > 255
         packetBuffer[2] = 0b11111111; // payload marker
         if (option_accept == 0) 
         {
           packetBuffer[1] = 0;
           Udp.write(packetBuffer, 3);
-          memset(packetBuffer,'\0' ,sizeof(packetBuffer));
+          memset(packetBuffer,'\0' ,strlen(packetBuffer));
           itoa(payload.value, packetBuffer, 10);
         }
         else if (option_accept == 50)
@@ -376,7 +375,7 @@ void loop() {
           Udp.write(packetBuffer, 3);
           sprintf(packetBuffer, "{value: %d}", payload.value);
         }
-        Udp.write(packetBuffer, sizeof(packetBuffer));
+        Udp.write(packetBuffer, strlen(packetBuffer));
         Udp.endPacket();
       }
       else if((UriPath == 16) && (code == 3))// PUT /frequency
@@ -414,9 +413,10 @@ void loop() {
         network.read(headerRec, &payload, sizeof(payload)); //dostajemy
 
         boolean flag=false;
-        while(true)
+        while(true)//zamieniłbym to na MAX 3 razy
+        //for (int i=0; i<3; i++)
         {
-        unsigned long x=millis();
+        temp=millis();
         Serial.println(F("Transmision to client"));
         Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
         packetBuffer[0] = 64 + (char)TKL;
@@ -426,7 +426,6 @@ void loop() {
         Udp.write(Token, (int)TKL); //the same token
         
         packetBuffer[0] = 0b11000001;
-        //packetBuffer[1] = 0; //packetBuffer[1] = option_accept możnaby tak zrobić, ale trzeba by zostawić to gotowe na zbugowanie, albo zabezpieczyć przed content-formatem o id > 255
         packetBuffer[2] = 0b11111111; // payload marker
         if (option_accept == 0) 
         {
@@ -441,18 +440,17 @@ void loop() {
           Udp.write(packetBuffer, 3);
           sprintf(packetBuffer, "{value: %d}", payload.value);
         }
-        //Udp.write(packetBuffer, sizeof(packetBuffer));
         Udp.write(packetBuffer, strlen(packetBuffer));
         Udp.endPacket(); // odsyłamy odczytaną wartość do klienta który żądał
         if(flagForDebug)
         { 
           Serial.println(F("Pokazujemy retransmisje"));
-          while((millis()-x)<=5000)
+          while((millis()-temp)<=5000)
           {
           }
           flagForDebug=false;
         }
-        while((millis()-x)<=3000)
+        while((millis()-temp)<=3000)
         {
           
           Serial.println(F("millis"));
@@ -462,7 +460,7 @@ void loop() {
             Udp.read(packetBuffer,4);
             if((packetBuffer[2]==mid.x[1]+1) && (packetBuffer[3]==mid.x[0]) && ((packetBuffer[0] & 0b11110000) == 96)) // jeśli to ACK z tym samym MID to koniec
             {
-             Serial.println("jest git");
+             Serial.println("received ACK");
              flag=true;
              break;
             }
@@ -484,9 +482,7 @@ void loop() {
         Udp.write(packetBuffer, 4);
         Udp.write(Token, (int)TKL);
         packetBuffer[0] = 0b11000001;
-        //packetBuffer[1] = 0; //packetBuffer[1] = option_accept możnaby tak zrobić, ale trzeba by zostawić to gotowe na zbugowanie, albo zabezpieczyć przed content-formatem o id > 255
         packetBuffer[2] = 0b11111111;
-        //Udp.write(packetBuffer, 3);
         if (option_accept == 0) 
         {
           packetBuffer[1] = 0;
@@ -500,39 +496,7 @@ void loop() {
           Udp.write(packetBuffer, 3);
           sprintf(packetBuffer, "{value: %d}", temp);
         }
-        Udp.write(packetBuffer, sizeof(packetBuffer));
-        Udp.endPacket();
-      }
-      else if((UriPath == 1) && (code == 1)) // GET ministats
-      {
-        payload.type = 4;//GET stats 
-        payload.value = 0;
-        network.write(headerSend, &payload, sizeof(payload));
-        while(!network.available()) network.update(); // communication with mini pro
-        network.read(headerRec, &payload, sizeof(payload));  
-         Udp.beginPacket(Udp.remoteIP(), Udp.remotePort()); // we got frequency and we'll send it to client
-        packetBuffer[0] = 96 + (char)TKL;
-        packetBuffer[1] = 0b01000101; //2.05
-        packetBuffer[2] = mid.x[1]; packetBuffer[3] = mid.x[0]; 
-        Udp.write(packetBuffer, 4);
-        Udp.write(Token, (int)TKL); //the same token
-        packetBuffer[0] = 0b11000001;
-        
-        packetBuffer[2] = 0b11111111; // payload marker
-        if (option_accept == 0) 
-        {
-          packetBuffer[1] = 0;
-          Udp.write(packetBuffer, 3);
-          memset(packetBuffer,'\0' ,sizeof(packetBuffer));
-          itoa(payload.value, packetBuffer, 10);
-        }
-        else if (option_accept == 50)
-        {
-          packetBuffer[1] = 50;
-          Udp.write(packetBuffer, 3);
-          sprintf(packetBuffer, "{Messages received in MiniPro: %d}", payload.value);
-        }
-        Udp.write(packetBuffer, sizeof(packetBuffer));
+        Udp.write(packetBuffer, strlen(packetBuffer));
         Udp.endPacket();
       }
       else if((UriPath==3) && (code==1))
@@ -546,10 +510,7 @@ void loop() {
         Udp.write(packetBuffer, 4);
         Udp.write(Token, (int)TKL);
         packetBuffer[0] = 0b11000001;
-        //packetBuffer[1] = 0; //packetBuffer[1] = option_accept możnaby tak zrobić
-        //DODALEM SPRAWDZANIE OPCJI, RACZEJ MOZNA ODKOMENTOWAC
         packetBuffer[2] = 0b11111111;
-        //Udp.write(packetBuffer, 3);
         if (option_accept == 0) 
         {
           packetBuffer[1] = 0;
@@ -560,9 +521,9 @@ void loop() {
         {
           packetBuffer[1] = 50;
           Udp.write(packetBuffer, 3);
-          strcpy(packetBuffer, "debug");
+          strcpy(packetBuffer, "{debug: true}");
         }
-        Udp.write(packetBuffer, sizeof(packetBuffer));
+        Udp.write(packetBuffer, strlen(packetBuffer));
         Udp.endPacket();
       }
      }
