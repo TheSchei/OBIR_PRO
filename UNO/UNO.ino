@@ -196,7 +196,7 @@ void loop() {
   if(packetSize)
   {
     ReceivedUDPMessages++;
-    Serial.println(F("Processing package"));
+    Serial.print(F("Processing package, size = "));
     Serial.println(packetSize);
     memset(packetBuffer, 0 ,sizeof(packetBuffer));
     int r = 0;
@@ -205,7 +205,7 @@ void loop() {
       errorFlag = 255;
       return;
     }
-    else
+    else // First block read
     {
       Udp.read(packetBuffer, 4); //Read first 4 bytes of message
       if((packetBuffer[0] & 0b11110000) == 64)//v1 CON message
@@ -229,7 +229,7 @@ void loop() {
         ifCON=false;
       }
       else if(packetBuffer[0] & 0b11110000 == 96) return; //ACK message
-      else // ERROR unknown type
+      else // ERROR, unknown type
       {
         errorFlag = 1;
         return;
@@ -244,34 +244,43 @@ void loop() {
 
       Serial.println(F("Reading options"));
       
+      //setting init values
+      
       option = 0;
       UriPath = 0;
       option_accept = 0;
       option_content = 0;
       int r=0;
-      while(((r=Udp.read(packetBuffer, 1))!=-1) && (packetBuffer[0] != -1))
+      while((((r=Udp.read(packetBuffer, 1))!=-1) && (packetBuffer[0] != -1)))
       {
-        Serial.print(F("Read bytes: "));
-        Serial.println(r);
-        //delay(5000);
-        option_delta = ((byte)((packetBuffer[0] & 0b11110000) >> 4));
-        Serial.print(F("Option delta: "));
-        Serial.println(option_delta);
-        option_length = (byte)(packetBuffer[0] & 0b00001111);
-         Serial.print(F("Option length: "));
-        Serial.println(option_length);
-        if (option_delta == 13)
+        option_delta = ((byte)((packetBuffer[0] & 0b11110000) >> 4));//read option_delta
+        option_length = (byte)(packetBuffer[0] & 0b00001111);//read option length
+        if (option_delta == 13)//check if there is more bytes to read
         {
-          Udp.read(packetBuffer, 1);
+          Udp.read(packetBuffer, 1);//read rest of the option
           option_delta += ((byte)(packetBuffer[0]));
         }
-        if (option_length == 13)
+        else if (option_delta > 13)
+        {
+          errorFlag = 131;
+          break;
+        }
+        if (option_length == 13)//check if there is more bytes to read
         {
           Udp.read(packetBuffer, 1);
           option_length += ((byte)(packetBuffer[0]));
         }
+        else if (option_length > 13)
+        {
+          errorFlag = 131;
+          break;
+        }
         option += option_delta;
-        //Serial.print(F("Option number: "));
+        Serial.print(F("Option delta: "));
+        Serial.println(option_delta);
+        Serial.print(F("Option length: "));
+        Serial.println(option_length);
+        Serial.print(F("Option number: "));
         Serial.println(option);
         
         if (option == 11)// URI-Path
@@ -280,25 +289,15 @@ void loop() {
           {
             memset(packetBuffer,'\0' ,sizeof(packetBuffer));
             Udp.read(packetBuffer, option_length);
-            Serial.println(packetBuffer);
             if (!strcmp(packetBuffer, ".well-known") && UriPath == 0) UriPath = 128;
             else if (!strcmp(packetBuffer, "core") && UriPath == 128) UriPath = 192;
             else if (!strcmp(packetBuffer, "frequency") && UriPath == 0) UriPath = 16;
             else if(!strcmp(packetBuffer, "potencjometr") && UriPath==0) UriPath=8;
             else if(!strcmp(packetBuffer, "udprecs") && UriPath==0) UriPath=4;
             else if(!strcmp(packetBuffer, "errors") && UriPath==0) UriPath=2;
+            else if(!strcmp(packetBuffer, "debug") && UriPath==0) UriPath=3;
             else if(!strcmp(packetBuffer, "ministats") && UriPath==0) UriPath=1;
-            else if(!strcmp(packetBuffer, "debug") && UriPath==0)
-            {
-              Serial.println(F("Changed flag"));
-              flagForDebug=true;
-              UriPath=3;
-            }
-            else 
-            {
-              flag = false;//nie wiem po co
-              errorFlag = 128;//UNKNOWN URI_PATH
-            }
+            else errorFlag = 128;//UNKNOWN URI_PATH
             Serial.print(F("UriPath = "));
             Serial.println(UriPath);
           }
@@ -324,11 +323,7 @@ void loop() {
           if (option_accept != 0 && option_accept != 50)
             errorFlag = 130;//UNKNOWN ACCEPT
         }
-        else 
-        {
-          flag = false;//error
-          errorFlag = 131;//UNKNOWN OPTION
-        }
+        else errorFlag = 131;//UNKNOWN OPTION
       }
       Serial.println(F("End of while"));
       if(errorFlag) return;
@@ -539,12 +534,11 @@ void loop() {
         }
         Udp.write(packetBuffer, sizeof(packetBuffer));
         Udp.endPacket();
-        
-        
       }
       else if((UriPath==3) && (code==1))
       {
         Serial.println(F("Debug online"));
+        flagForDebug=true;
         Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
         packetBuffer[0] = 96 + (char)TKL;
         packetBuffer[1] = 0b01000101;
