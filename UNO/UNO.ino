@@ -77,7 +77,7 @@ void loop() {
     switch(errorFlag)
     {
       case 255: //UNKNOWN PROTOCOL
-        packetBuffer[0] = 96; //v1 ACK TKL = 0
+        packetBuffer[0] += TKL; //v1 ACK TKL = 0
         packetBuffer[1] = 0b10000000; //CODE 4.00 BAD REQUEST
         packetBuffer[2] = mid.x[1];
         packetBuffer[3] = mid.x[0]; //Randomowy syf bedzie?
@@ -336,7 +336,8 @@ void loop() {
       {
         Serial.println(F("Send response"));
         Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-        packetBuffer[0] = 96 + (char)TKL;//ACK + TKL
+        if(ifCON) packetBuffer[0] = 96 + (char)TKL;//ACK + TKL
+        else packetBuffer[0] = 80 + (char)TKL;//NON + TKL
         packetBuffer[1] = 0b01000101;//2.05
         packetBuffer[2] = mid.x[1]; packetBuffer[3] = mid.x[0];
         Udp.write(packetBuffer, 4);
@@ -363,7 +364,8 @@ void loop() {
         if(errorFlag) return;
         network.read(headerRec, &payload, sizeof(payload));  
         Udp.beginPacket(Udp.remoteIP(), Udp.remotePort()); // we got value and we'll send it to client
-        packetBuffer[0] = 96 + (char)TKL;
+        if(ifCON) packetBuffer[0] = 96 + (char)TKL;//ACK + TKL
+        else packetBuffer[0] = 80 + (char)TKL;//NON + TKL
         packetBuffer[1] = 0b01000101; //2.05
         packetBuffer[2] = mid.x[1]; packetBuffer[3] = mid.x[0]; 
         Udp.write(packetBuffer, 4);
@@ -396,7 +398,8 @@ void loop() {
         else return;//JSONA JESZCZE
         network.write(headerSend, &payload, sizeof(payload));//moze jeszcze jakies potwierdzenie
         Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-        packetBuffer[0] = 96 + (char)TKL;
+        if(ifCON) packetBuffer[0] = 96 + (char)TKL;//ACK + TKL
+        else packetBuffer[0] = 80 + (char)TKL;//NON + TKL
         packetBuffer[1] = 0b01000100; //2.04
         packetBuffer[2] = mid.x[1]; packetBuffer[3] = mid.x[0]; 
         Udp.write(packetBuffer, 4);
@@ -489,7 +492,8 @@ void loop() {
         else if (UriPath==2) temp = ErrorCounter;
         //else if (UriPath==1) temp = XXXXX;
         Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-        packetBuffer[0] = 96 + (char)TKL;
+        if(ifCON) packetBuffer[0] = 96 + (char)TKL;//ACK + TKL
+        else packetBuffer[0] = 80 + (char)TKL;//NON + TKL
         packetBuffer[1] = 0b01000101;
         packetBuffer[2] = mid.x[1]; packetBuffer[3] = mid.x[0];
         Udp.write(packetBuffer, 4);
@@ -517,7 +521,8 @@ void loop() {
         Serial.println(F("Debug online"));
         flagForDebug=true;
         Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-        packetBuffer[0] = 96 + (char)TKL;
+        if(ifCON) packetBuffer[0] = 96 + (char)TKL;//ACK + TKL
+        else packetBuffer[0] = 80 + (char)TKL;//NON + TKL
         packetBuffer[1] = 0b01000101;
         packetBuffer[2] = mid.x[1]; packetBuffer[3] = mid.x[0];
         Udp.write(packetBuffer, 4);
