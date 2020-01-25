@@ -200,6 +200,7 @@ void loop() {
   if(packetSize)
   {
     operationTime = millis();
+    Serial.println();
     ReceivedUDPMessages++;
     Serial.print(F("Processing package, size = "));
     Serial.println(packetSize);
