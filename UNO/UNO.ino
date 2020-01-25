@@ -171,6 +171,7 @@ void loop() {
         Udp.endPacket();
         break;
 
+      case 254:
       default:
         packetBuffer[0] += TKL;
         packetBuffer[1] = 0b10100000; //CODE 5.00 INTERNAL SERVER ERROR
@@ -353,9 +354,15 @@ void loop() {
         else payload.type = 4;//GET miniStats
         payload.value = 0;
         network.write(headerSend, &payload, sizeof(payload));
-        while(!network.available()) network.update(); // communication with mini pro
+        temp = millis();
+        while(!network.available())
+          if(millis() - temp < 100)//if we are waiting less than 100ms
+            network.update();//keep waiting
+          else
+            errorFlag = 254;//set errorFlag
+        if(errorFlag) return;
         network.read(headerRec, &payload, sizeof(payload));  
-         Udp.beginPacket(Udp.remoteIP(), Udp.remotePort()); // we got value and we'll send it to client
+        Udp.beginPacket(Udp.remoteIP(), Udp.remotePort()); // we got value and we'll send it to client
         packetBuffer[0] = 96 + (char)TKL;
         packetBuffer[1] = 0b01000101; //2.05
         packetBuffer[2] = mid.x[1]; packetBuffer[3] = mid.x[0]; 
@@ -410,7 +417,12 @@ void loop() {
         payload.type=3;
         payload.value=0;
          network.write(headerSend, &payload, sizeof(payload)); // wysyłamy do mini pro tego geta
-        while(!network.available()) network.update(); 
+        while(!network.available())
+          if(millis() - temp < 100)//if we are waiting less than 100ms
+            network.update();//keep waiting
+          else
+            errorFlag = 254;//set errorFlag
+        if(errorFlag) return;
         network.read(headerRec, &payload, sizeof(payload)); //dostajemy
 
         boolean flag=false;
