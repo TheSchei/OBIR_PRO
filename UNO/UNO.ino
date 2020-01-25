@@ -36,6 +36,7 @@ RF24NetworkHeader headerRec(1), headerSend(1);
 unsigned long ReceivedUDPMessages = 0;
 unsigned long ErrorCounter = 0;
 unsigned long temp;//TEMP
+unsigned long operationTime;
 
 //Zmienne główne
 MID mid; // message id
@@ -191,11 +192,14 @@ void loop() {
 
     ErrorCounter++;
     errorFlag = 0;
+    Serial.print(F("Processing time in ms = "));
+    Serial.println(millis() - operationTime);
     return;
   }
   int packetSize = Udp.parsePacket();
   if(packetSize)
   {
+    operationTime = millis();
     ReceivedUDPMessages++;
     Serial.print(F("Processing package, size = "));
     Serial.println(packetSize);
@@ -310,7 +314,7 @@ void loop() {
             Udp.read(packetBuffer, option_length);
             option_content = (unsigned int)packetBuffer[0];
           }
-          else errorFlag = 129;//UNKNOWN FORMAT (>1 byte, so >128, we use max 50)
+          else if (option_length != 0) errorFlag = 129;//UNKNOWN FORMAT (>1 byte, so >128, we use max 50)
           if (option_content != 0)// && option_content != 50)// we can read only plaintext(put frequency)
             errorFlag = 129;//UNKNOWN FORMAT
         }
@@ -321,7 +325,7 @@ void loop() {
             Udp.read(packetBuffer, option_length);
             option_accept = (unsigned int)packetBuffer[0];
           }
-          else errorFlag = 130;//UNKNOWN ACCEPT (>1 byte, so >128, we use max 50)
+          else if (option_length != 0) errorFlag = 130;//UNKNOWN ACCEPT (>1 byte, so >128, we use max 50)
           if ((option_accept != 0 && option_accept != 50) || (UriPath == 192 && option_accept == 40))//application/linkformat case
             errorFlag = 130;//UNKNOWN ACCEPT
         }
@@ -360,7 +364,10 @@ void loop() {
           if(millis() - temp < 100)//if we are waiting less than 100ms
             network.update();//keep waiting
           else
+          {
             errorFlag = 254;//set errorFlag
+            break;
+          }
         if(errorFlag) return;
         network.read(headerRec, &payload, sizeof(payload));  
         Udp.beginPacket(Udp.remoteIP(), Udp.remotePort()); // we got value and we'll send it to client
@@ -396,7 +403,23 @@ void loop() {
           payload.value = atoi(packetBuffer);
         }
         else return;//JSONA JESZCZE
-        network.write(headerSend, &payload, sizeof(payload));//moze jeszcze jakies potwierdzenie
+        network.write(headerSend, &payload, sizeof(payload));
+        temp = millis();
+        while(!network.available())
+          if(millis() - temp < 100)//if we are waiting less than 100ms
+            network.update();//keep waiting
+          else
+          {
+            errorFlag = 254;//set errorFlag
+            break;
+          }
+        if(errorFlag) return;
+        network.read(headerRec, &payload, sizeof(payload));
+        if (payload.type != 10)
+        {
+          errorFlag = 254;
+          return;
+        }
         Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
         if(ifCON) packetBuffer[0] = 96 + (char)TKL;//ACK + TKL
         else packetBuffer[0] = 80 + (char)TKL;//NON + TKL
@@ -420,6 +443,7 @@ void loop() {
         payload.type=3;
         payload.value=0;
          network.write(headerSend, &payload, sizeof(payload)); // wysyłamy do mini pro tego geta
+         temp=millis();
         while(!network.available())
           if(millis() - temp < 100)//if we are waiting less than 100ms
             network.update();//keep waiting
@@ -545,6 +569,11 @@ void loop() {
         Udp.endPacket();
       }
       else errorFlag = 128;
+     }
+     if (!errorFlag)
+     {
+      Serial.print(F("Processing time in ms = "));
+      Serial.println(millis() - operationTime);
      }
     }   
  }

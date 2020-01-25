@@ -58,6 +58,8 @@ void loop() {
           Serial.print(frequency);
           Serial.println(F(" is a new frequency."));
           ++counterForStats;
+          payload.type = 10;//ACK
+          network.write(headerSend, &payload, sizeof(payload));
         }
         else
         {
