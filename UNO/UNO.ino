@@ -362,7 +362,7 @@ void loop() {
         network.write(headerSend, &payload, sizeof(payload));
         temp = millis();
         while(!network.available())
-          if(millis() - temp < 100)//if we are waiting less than 100ms
+          if(millis() - temp < 200)//if we are waiting less than 200ms
             network.update();//keep waiting
           else
           {
@@ -407,7 +407,7 @@ void loop() {
         network.write(headerSend, &payload, sizeof(payload));
         temp = millis();
         while(!network.available())
-          if(millis() - temp < 100)//if we are waiting less than 100ms
+          if(millis() - temp < 200)//if we are waiting less than 100ms
             network.update();//keep waiting
           else
           {
