@@ -47,8 +47,6 @@ void loop() {
           frequency = 0;
           Serial.println(F("Speaker stopped."));
           Timer1.stop();
-          payload.type = 10;//ACK
-          network.write(headerSend, &payload, sizeof(payload));
         }
         else if (payload.value < 20000)
         { 
@@ -60,15 +58,11 @@ void loop() {
           Serial.print(frequency);
           Serial.println(F(" is a new frequency."));
           ++counterForStats;
-          payload.type = 10;//ACK
-          network.write(headerSend, &payload, sizeof(payload));
         }
         else
         {
           Serial.print(payload.value);
           Serial.println(F("is too high frequency."));
-          payload.type = 9;//ACK-error
-          network.write(headerSend, &payload, sizeof(payload));
         }
         break;
     case 2: // GET frequency
@@ -86,7 +80,7 @@ void loop() {
         value += analogRead(A0);
       }
       payload.type = 2;//potencjometr :p
-      payload.value = value >>= 4;//ciekawe czy to działą :p
+      payload.value = value >>= 4;//ciekawe czy to działa :p
       network.write(headerSend, &payload, sizeof(payload));
       Serial.print(value);
       Serial.println(F(" value sent to gateway.."));

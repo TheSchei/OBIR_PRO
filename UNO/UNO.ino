@@ -359,7 +359,11 @@ void loop() {
         if(UriPath == 16) payload.type = 2;//GET frequency
         else payload.type = 4;//GET miniStats
         payload.value = 0;
-        network.write(headerSend, &payload, sizeof(payload));
+        if(!network.write(headerSend, &payload, sizeof(payload)))
+        {
+          errorFlag = 254;
+          return;
+        }
         temp = millis();
         while(!network.available())
           if(millis() - temp < 200)//if we are waiting less than 200ms
@@ -404,19 +408,7 @@ void loop() {
           payload.value = atoi(packetBuffer);
         }
         else return;//JSONA JESZCZE
-        network.write(headerSend, &payload, sizeof(payload));
-        temp = millis();
-        while(!network.available())
-          if(millis() - temp < 200)//if we are waiting less than 100ms
-            network.update();//keep waiting
-          else
-          {
-            errorFlag = 254;//set errorFlag
-            break;
-          }
-        if(errorFlag) return;
-        network.read(headerRec, &payload, sizeof(payload));
-        if (payload.type != 10)
+        if(!network.write(headerSend, &payload, sizeof(payload)))
         {
           errorFlag = 254;
           return;
@@ -443,8 +435,12 @@ void loop() {
         }
         payload.type=3;
         payload.value=0;
-         network.write(headerSend, &payload, sizeof(payload)); // wysyłamy do mini pro tego geta
-         temp=millis();
+        if(!network.write(headerSend, &payload, sizeof(payload)))
+        {
+          errorFlag = 254;
+          return;
+        } // wysyłamy do mini pro tego geta
+        temp=millis();
         while(!network.available())
           if(millis() - temp < 100)//if we are waiting less than 100ms
             network.update();//keep waiting
