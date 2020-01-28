@@ -31,7 +31,7 @@ void setup() {
 }
 
 void myisr(){
-  //digitalWrite(10,digitalRead(10)^1); // actual tone generation//niech mi nie halasuje :p
+  digitalWrite(10,digitalRead(10)^1); // actual tone generation//niech mi nie halasuje :p
 }
 
 void loop() {
@@ -51,10 +51,10 @@ void loop() {
         else if (payload.value < 20000)
         { 
           frequency = payload.value;
-          //Timer1.setPeriod(frequency<<9);//frequency*500//optymalizacja:p frequency<<9
+          
           Timer1.setPeriod(500000/frequency);//frequency*500//optymalizacja:p frequency<<9
           //Timer1.reset();
-          Timer1.start();//ciekawe, czy jest na tyle mądre, że się nie wywala jeśli wystartujemy wystartowany
+          Timer1.start();
           Serial.print(frequency);
           Serial.println(F(" is a new frequency."));
           ++counterForStats;
@@ -67,7 +67,7 @@ void loop() {
         break;
     case 2: // GET frequency
       
-      payload.type = 1;//frequency :p
+      payload.type = 1;//frequency 
       payload.value = frequency;
       network.write(headerSend, &payload, sizeof(payload));
       Serial.println(F("Frequency sent to gateway."));
@@ -79,8 +79,8 @@ void loop() {
       {
         value += analogRead(A0);
       }
-      payload.type = 2;//potencjometr :p
-      payload.value = value >>= 4;//ciekawe czy to działa :p
+      payload.type = 2; // potencjometr
+      payload.value = value >>= 4;
       network.write(headerSend, &payload, sizeof(payload));
       Serial.print(value);
       Serial.println(F(" value sent to gateway.."));
@@ -88,7 +88,7 @@ void loop() {
       break;
     case 4: // get stats
       ++counterForStats;
-      payload.type=4;
+      payload.type=4; //stats of MiniPro
       payload.value=counterForStats;
       network.write(headerSend,&payload,sizeof(payload));
       break;

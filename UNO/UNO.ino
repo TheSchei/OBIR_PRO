@@ -426,7 +426,7 @@ void loop() {
       {
         if(ifCON) // if it is a CON message, we should send ACK to client
         {
-          Udp.beginPacket(Udp.remoteIP(), Udp.remotePort()); //wysylamy ack do klients
+          Udp.beginPacket(Udp.remoteIP(), Udp.remotePort()); //send ack to client
           packetBuffer[0]=0b01100000; // ACK
           packetBuffer[1]=0b00000000; //empty token
           packetBuffer[2] = mid.x[1]; packetBuffer[3] = mid.x[0]; // the same message id
@@ -439,7 +439,7 @@ void loop() {
         {
           errorFlag = 254;
           return;
-        } // wysyłamy do mini pro tego geta
+        } 
         temp=millis();
         while(!network.available())
           if(millis() - temp < 100)//if we are waiting less than 100ms
@@ -537,7 +537,7 @@ void loop() {
         Udp.write(packetBuffer, strlen(packetBuffer));
         Udp.endPacket();
       }
-      else if((UriPath==3) && (code==1))
+      else if((UriPath==3) && (code==1))// switch on the tryb of debug to show retransmision
       {
         Serial.println(F("Debug online"));
         flagForDebug=true;
